@@ -1,0 +1,19 @@
+{
+  "iisSettings": {
+    "windowsAuthentication": false,
+    "anonymousAuthentication": true,
+    "iisExpress": {
+      "applicationUrl": "http://localhost:5011/",
+      "sslPort": 0
+    }
+  },
+  "profiles": {
+    "HashtagAggregatorVk.Service": {
+      "commandName": "IISExpress",
+      "environmentVariables": {
+        " ASPNETCORE_ENVIRONMENT": "dev"
+      },
+      "applicationUrl": "http://localhost:5011/"
+    }
+  }
+}
