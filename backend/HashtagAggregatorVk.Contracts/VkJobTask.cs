@@ -7,7 +7,7 @@ namespace HashtagAggregatorVk.Contracts
 {
     public class VkJobTask : IJobTask
     {
-        private const string JobIdPattern = "{0}-enqueue-id";
+        private const string JobIdPattern = "{0}-{1}-enqueue-id";
 
         public HashTagWord Tag { get; }
 
@@ -15,7 +15,7 @@ namespace HashtagAggregatorVk.Contracts
 
         public int Interval { get; }
 
-        public string JobId => String.Format(JobIdPattern, Tag.NoHashTag);
+        public string JobId => String.Format(JobIdPattern, Parameters.ServerName ,Tag.NoHashTag);
 
         public VkJobTask(HashTagWord tag, QueueParams parameters, int interval)
         {
