@@ -26,7 +26,7 @@ namespace HashtagAggregatorVk.Service.Infrastructure.Jobs
         private readonly ILogger<VkJob> logger;
 
         public VkJob(IVkQueue queue,
-            IOptions<VkApiSettings> settings, 
+            IOptions<VkApiSettings> settings,
             IOptions<VkAuthSettings> authVkSettings,
             ILogger<VkJob> logger)
         {
@@ -40,6 +40,7 @@ namespace HashtagAggregatorVk.Service.Infrastructure.Jobs
         [Queue("vkserver")]
         public async Task<ICommandResult> Execute(VkJobTask task)
         {
+            ICommandResult result = new CommandResult {Success = false};
             using (var request = new WebRequestWrapper())
             {
                 var query =
@@ -47,7 +48,8 @@ namespace HashtagAggregatorVk.Service.Infrastructure.Jobs
                         settings.Value.ApiVersion,
                         authVkSettings.Value.ServiceToken)
                     {
-                        Query = task.Tag.ToString()
+                        Query = task.Tag.ToString(),
+                        StartTime = DateTime.Now - TimeSpan.FromMinutes(task.Interval)
                     };
 
                 var json = await request.LoadJsonAsync(HttpMethod.Get, query.ToString());
@@ -62,16 +64,29 @@ namespace HashtagAggregatorVk.Service.Infrastructure.Jobs
                         jObject);
                     throw new InvalidDataException(jObject);
                 }
-
-                var feed = CheckThatObjectCorrect(jObject);
-                return await queue.Enqueue(feed);
+                VkNewsFeed feed;
+                if (CheckThatObjectCorrect(jObject, out feed))
+                {
+                    result = await queue.Enqueue(feed);
+                }
+                else
+                {
+                    result.Success = true;
+                    result.Message = $"No data for {task.Tag} in job: {task.JobId}";
+                }
+                return result;
             }
         }
 
-        private static VkNewsFeed CheckThatObjectCorrect(string jObject)
+        private static bool CheckThatObjectCorrect(string jObject, out VkNewsFeed feed)
         {
-            var feed = JsonConvert.DeserializeObject<VkNewsFeed>(jObject);
-            return feed;
+            bool isObjectCorrect = false;
+            feed = JsonConvert.DeserializeObject<VkNewsFeed>(jObject);
+            if (feed != null && feed.Feed.Count > 0 && (feed.Profiles.Count > 0 || feed.Groups.Count > 0))
+            {
+                isObjectCorrect = true;
+            }
+            return isObjectCorrect;
         }
     }
 }
